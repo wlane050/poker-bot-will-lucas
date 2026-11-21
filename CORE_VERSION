@@ -1,0 +1,6 @@
+core 2687febda342c653
+runner 4ee58a1
+published 2026-11-21 08:25:19 EST
+
+pokercore/ is generated from the tournament runner and must not be edited.
+`python3 play.py ...` prints the core's fingerprint; it should match the first line.
