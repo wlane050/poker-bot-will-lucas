@@ -1,14 +1,20 @@
 """
-404 Chips Not Found — Version 16 (FINAL TOURNAMENT BUILD)
-Fixes from Version 15:
-1. Exact zero-tail top-X% preflop equity (_eq_vs_top) + calibrated 169-hand HU
-   equity ordering (eliminates dominated preflop calls vs Angelo, Nits, Limp-Shovers).
-2. Removes postflop bluff_floor double-counting, tightens preflop carry-over,
-   adds opponent call-street narrowing, and tracks BB limp-shoves explicitly.
-3. Counter-Angelo & Counter-Nit gears: 2.2x button opens, wider defense & 0.56+
-   bluff-raises vs cheap flop stabs, and automatic cheap bet scaling vs Nits.
-4. Smart 7-2 Side-Prize Shove: jams 7-2 when ahead in chips (>=1.15x) or
-   eff_bb <= 35 (dodging 200 BB suicide busts while maximizing 7-2 leaderboard EV).
+404_chips_not_found — Heads-Up No-Limit Texas Hold'em Bot
+IEEE uOttawa × Larus Poker Bot Hackathon (Tied 3rd / 21 Teams, "Most Won Off 7-2" Winner)
+
+Architecture:
+1. Continuous Bayesian Opponent Modeling: Tracks ~30 preflop/postflop frequencies
+   (opens, 3-bets, shoves, limp-shoves, c-bets, overbets, size-bucketed fold rates,
+   and showdown bluff rates) smoothed with Beta priors.
+2. Preflop Engine: Zero-tail top-X% preflop range equity, calibrated 169-hand HU
+   ordering, ante-aware Nash push/fold (<= 15 BB), and freezeout survival premiums.
+3. Postflop Engine: MDF-anchored range reading mapped to order-statistic combo
+   weights, exact 990-combo river enumeration, and time-bounded flop/turn rollouts.
+4. Unreadable Situation-Based Sizing: Bet sizes depend on street, board texture,
+   and opponent fold rate rather than hand strength, scaling up vs. stations and
+   down vs. tight opponents.
+5. Rule-Aware 7-2 Heuristic: Conditional preflop 7-2 shove when ahead in chips
+   (>= 1.15x) or <= 35 BB against non-stations to maximize 7-2 side-prize EV.
 """
 
 import itertools
@@ -590,7 +596,7 @@ def _preflop(s: dict, c: dict) -> tuple:
     premium = _life_premium(c, shove_overall)
 
     # 0) Smart 7-2 Side-Prize Shove: jam when ahead in chips (cannot bust!) OR
-    #    eff_bb <= 35 (high pot/blind reward), dodging suicidal jams into stations.
+    #    eff_bb <= 35 (high pot/blind reward), avoiding high-variance shoves into calling stations.
     if SEVEN_TWO_SHOVE and is_seven_two and not c["opp_all_in"] and not mine:
         any_fold = _rate(st["any_fold"], st["any_n"], 0.35, 6)
         shove_call_rate = (st["shove_call"] / float(st["shove_n"])) if st["shove_n"] >= 3 else 0.40
